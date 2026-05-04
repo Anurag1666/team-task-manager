@@ -7,73 +7,72 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
 
+  // Fetch tasks
   const fetchTasks = () => {
-    API.get("/tasks").then((res) => setTasks(res.data));
+    API.get("/tasks")
+      .then((res) => setTasks(res.data))
+      .catch((err) => console.error(err));
   };
 
   useEffect(() => {
     fetchTasks();
   }, []);
 
+  // Create task
   const createTask = async () => {
-    await API.post("/tasks", {
-      title,
-      dueDate: new Date().toISOString(), // temp due date
-    });
-    setTitle("");
-    fetchTasks();
+    if (!title) return alert("Enter task title");
+
+    try {
+      await API.post("/tasks", { title });
+      setTitle("");
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
+  // Update status
   const updateStatus = async (id, status) => {
-    await API.put(`/tasks/${id}/status`, { status });
-    fetchTasks();
+    try {
+      await API.put(`/tasks/${id}/status`, { status });
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  // 🔥 STATS LOGIC
+  // 📊 STATS CALCULATION
   const total = tasks.length;
-
-  const completed = tasks.filter(
-    (t) => t.status === "COMPLETED"
-  ).length;
-
-  const inProgress = tasks.filter(
-    (t) => t.status === "IN_PROGRESS"
-  ).length;
-
-  const overdue = tasks.filter((t) => {
-    return (
-      t.dueDate &&
-      new Date(t.dueDate) < new Date() &&
-      t.status !== "COMPLETED"
-    );
-  }).length;
+  const completed = tasks.filter((t) => t.status === "COMPLETED").length;
+  const inProgress = tasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const todo = tasks.filter((t) => t.status === "TODO").length;
 
   return (
     <div style={{ padding: 20 }}>
       <h1>Dashboard 📊</h1>
 
-      {/* CREATE TASK */}
+      {/* ➕ Add Task */}
       <input
         placeholder="Task title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        style={{ padding: 8, marginRight: 10 }}
       />
 
       <button onClick={createTask}>Add Task</button>
 
-      {/* 🔥 STATS UI */}
-      <h2>Stats</h2>
-      <p>Total: {total}</p>
-      <p>Completed: {completed}</p>
-      <p>In Progress: {inProgress}</p>
-      <p>Overdue: {overdue}</p>
+      {/* 📊 Stats */}
+      <div style={{ marginTop: 20 }}>
+        <h2>Total Tasks: {total}</h2>
+        <h3>Completed: {completed}</h3>
+        <h3>In Progress: {inProgress}</h3>
+        <h3>Todo: {todo}</h3>
+      </div>
 
-      <hr />
-
-      {/* TASK LIST */}
-      <ul>
+      {/* 📋 Task List */}
+      <ul style={{ marginTop: 20 }}>
         {tasks.map((task) => (
-          <li key={task.id}>
+          <li key={task.id} style={{ marginBottom: 15 }}>
             <strong>{task.title}</strong> — {task.status}
 
             <br />
@@ -82,15 +81,11 @@ export default function Dashboard() {
               TODO
             </button>
 
-            <button
-              onClick={() => updateStatus(task.id, "IN_PROGRESS")}
-            >
+            <button onClick={() => updateStatus(task.id, "IN_PROGRESS")}>
               IN PROGRESS
             </button>
 
-            <button
-              onClick={() => updateStatus(task.id, "COMPLETED")}
-            >
+            <button onClick={() => updateStatus(task.id, "COMPLETED")}>
               COMPLETED
             </button>
 
